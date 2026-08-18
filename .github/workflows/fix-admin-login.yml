@@ -1,0 +1,31 @@
+name: Fix Admin Login
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix admin credentials
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="if($('adminUser').value.trim()==='900697701'&&$('adminPass').value==='Lavk@2345')"
+          new="if($('adminUser').value.replace(/\\s/g,'')==='900697701'&&$('adminPass').value.trim()==='Lavk@2345')"
+          if old not in s:
+              raise SystemExit('Expected admin login code not found; no change made.')
+          p.write_text(s.replace(old,new,1))
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Fix working admin login' || exit 0
+          git push
