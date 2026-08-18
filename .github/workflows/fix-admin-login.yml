@@ -7,6 +7,7 @@ permissions:
   contents: write
 jobs:
   fix:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,17 +16,22 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           p=Path('index.html')
-          s=p.read_text()
+          s=p.read_text(encoding='utf-8')
           old="if($('adminUser').value.trim()==='900697701'&&$('adminPass').value==='Lavk@2345')"
-          new="if($('adminUser').value.replace(/\\s/g,'')==='900697701'&&$('adminPass').value.trim()==='Lavk@2345')"
-          if old not in s:
-              raise SystemExit('Expected admin login code not found; no change made.')
-          p.write_text(s.replace(old,new,1))
+          new="if($('adminUser').value.normalize('NFKC').replace(/\\s+/g,'')==='900697701'&&$('adminPass').value.normalize('NFKC').replace(/\\s+/g,'')==='Lavk@2345')"
+          if old in s:
+              s=s.replace(old,new,1)
+          else:
+              old2="if($('adminUser').value.replace(/\\s/g,'')==='900697701'&&$('adminPass').value.trim()==='Lavk@2345')"
+              if old2 not in s:
+                  raise SystemExit('Expected admin login code not found; no change made.')
+              s=s.replace(old2,new,1)
+          p.write_text(s,encoding='utf-8')
           PY
       - name: Commit fix
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git commit -m 'Fix working admin login' || exit 0
+          git commit -m 'Fix admin login normalization' || exit 0
           git push
