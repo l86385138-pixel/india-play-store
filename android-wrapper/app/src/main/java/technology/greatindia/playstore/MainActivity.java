@@ -1,16 +1,19 @@
 package technology.greatindia.playstore;
 
+import android.Manifest;
 import android.app.*;
 import android.content.*;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.*;
 import android.provider.Settings;
-import android.view.*;
 import android.webkit.*;
 import android.widget.Toast;
+import java.util.ArrayList;
 
 public class MainActivity extends Activity {
     private static final String HOME = "https://play.greatindia.technology/";
+    private static final int PERMISSION_REQUEST = 7001;
     private DownloadManager dm;
     private BroadcastReceiver receiver;
 
@@ -24,6 +27,26 @@ public class MainActivity extends Activity {
         w.setWebViewClient(new WebViewClient());
         w.setDownloadListener((url, userAgent, contentDisposition, mime, length) -> startDownload(url, contentDisposition));
         w.loadUrl(HOME);
+        requestAppPermissions();
+    }
+
+    private void requestAppPermissions() {
+        ArrayList<String> p = new ArrayList<>();
+        addIfNeeded(p, Manifest.permission.CAMERA);
+        addIfNeeded(p, Manifest.permission.READ_CONTACTS);
+        if (Build.VERSION.SDK_INT <= 32) {
+            addIfNeeded(p, Manifest.permission.READ_EXTERNAL_STORAGE);
+        } else {
+            addIfNeeded(p, Manifest.permission.READ_MEDIA_IMAGES);
+            addIfNeeded(p, Manifest.permission.READ_MEDIA_VIDEO);
+            addIfNeeded(p, Manifest.permission.READ_MEDIA_AUDIO);
+            addIfNeeded(p, Manifest.permission.POST_NOTIFICATIONS);
+        }
+        if (!p.isEmpty()) requestPermissions(p.toArray(new String[0]), PERMISSION_REQUEST);
+    }
+
+    private void addIfNeeded(ArrayList<String> p, String permission) {
+        if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) p.add(permission);
     }
 
     private void startDownload(String url, String disposition) {
